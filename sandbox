@@ -1,0 +1,27 @@
+#! /bin/sh
+#
+# sandbox — portable, bare-bones reduction of mulle-env-sandbox.linux
+#
+# Grants read+execute to the usual system directories and to *this script's
+# own directory* (so the reproducer binary can run from wherever it was
+# unpacked), plus create+read+write+execute to /tmp.
+#
+# The caller's $HOME is deliberately NOT granted.
+#
+# Override the sandbox executable with $LLJAIL if lljail is not on PATH.
+
+HERE=`cd "$(dirname "$0")" 2>/dev/null && pwd`
+LLJAIL="${LLJAIL:-lljail}"
+
+set -- '--' "$@"
+
+[ -n "${HERE}" ] && set -- -rx "${HERE}" "$@"
+
+for dir in /usr /bin /etc /lib /lib64
+do
+   [ -d "${dir}" ] && set -- -rx "${dir}" "$@"
+done
+
+[ -d /tmp ] && set -- -crwx /tmp "$@"
+
+MULLE_ENV_SANDBOX_RUNNING='YES' "${LLJAIL}" "$@"
